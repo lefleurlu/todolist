@@ -12,10 +12,18 @@ class ToDoListViewController: UITableViewController {
 
     var itemArray = ["Eggs", "Bread", "Carrots"]
     
+    let defaults = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        if let items = defaults.array(forKey: "ToDoListArray") as? [String] {
+            itemArray = items
+        }
+        
     }
+    
     
     // tableView datasource methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -56,6 +64,9 @@ class ToDoListViewController: UITableViewController {
             // what happens when user clicks the button on UIAlert
             // forced unwrapped because the text property of a textfield will never be null
             self.itemArray.append(textField.text!)
+            
+            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
+            
             self.tableView.reloadData()
         }
         
