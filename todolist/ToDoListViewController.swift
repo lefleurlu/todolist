@@ -11,29 +11,14 @@ import UIKit
 class ToDoListViewController: UITableViewController {
 
     var itemArray = [Item]()
-    
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Eggs"
-        itemArray.append(newItem)
-
-        let newItem2 = Item()
-        newItem2.title = "Carrots"
-        itemArray.append(newItem2)
-
-        let newItem3 = Item()
-        newItem3.title = "Bread"
-        itemArray.append(newItem3)
-
-        // Do any additional setup after loading the view.
+        //print(dataFilePath)
         
-        if let items = defaults.array(forKey: "ToDoListArray") as? [Item] {
-            itemArray = items
-        }
+        loadItems()
         
     }
     
@@ -70,14 +55,14 @@ class ToDoListViewController: UITableViewController {
         //print(itemArray[indexPath.row])
 
         itemArray[indexPath.row].flag = !itemArray[indexPath.row].flag
-//      same funcionalitu
+//      same funcionality
 //        if itemArray[indexPath.row].flag == false {
 //            itemArray[indexPath.row].flag = true
 //        } else {
 //            itemArray[indexPath.row].flag = false
 //        }
         
-        tableView.reloadData()
+        saveItems()
         
 //        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
 //            tableView.cellForRow(at: indexPath)?.accessoryType = .none
@@ -106,12 +91,11 @@ class ToDoListViewController: UITableViewController {
             // forced unwrapped because the text property of a textfield will never be null
             //self.itemArray.append(textField.text!)
             
-            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
+   
         }
         
-            // adding textfield
+            // adding textfieldbb
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
 
@@ -125,5 +109,33 @@ class ToDoListViewController: UITableViewController {
         
     }
     
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data =  try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        
+        tableView.reloadData()
+        
+        
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array: \(error)")
+            }
+        }
+        
+        
+    }
 }
 
