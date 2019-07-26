@@ -7,9 +7,11 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
+    
+    let realm = try! Realm()
 
     var categoryArray = [Category]()
     
@@ -19,7 +21,7 @@ class CategoryViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        loadCategories()
+        //loadCategories()
     }
 
 // MARK: - TableView Datasource Methods, to display all categories inside persisten container
@@ -54,10 +56,12 @@ class CategoryViewController: UITableViewController {
     }
     
 //MARK: - Data Manipulation Methods, save and load data
-    func saveCategories() {
+    func save(category : Category) {
 
         do{
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Error saving context\(error)")
         }
@@ -67,17 +71,17 @@ class CategoryViewController: UITableViewController {
     }
 
     
-    //          external internal parameter names       cc
-    func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-        do {
-            categoryArray = try context.fetch(request)
-        } catch {
-            print("Error fetching data from context \(error)")
-        }
-
-        tableView.reloadData()
-        
-    }
+//    //          external internal parameter names       cc
+//    func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
+//        do {
+//            categoryArray = try context.fetch(request)
+//        } catch {
+//            print("Error fetching data from context \(error)")
+//        }
+//
+//        tableView.reloadData()
+//
+//    }
     
     
 //MARK: - Add New Categories, setting button pressed
@@ -88,18 +92,11 @@ class CategoryViewController: UITableViewController {
 
             let action = UIAlertAction(title: "Add", style: .default) { (action) in
                 // what happens when user clicks the button on UIAlert
-
-                //accesing the appdelegate as object
-
-                let newCategory = Category(context: self.context)
+                let newCategory = Category()
                 newCategory.name = textField.text!
                 self.categoryArray.append(newCategory)
 
-                
-                // forced unwrapped because the text property of a textfield will never be null
-                
-                
-                self.saveCategories()
+                self.save(category : newCategory)
             }
         
             // adding textfieldbb
