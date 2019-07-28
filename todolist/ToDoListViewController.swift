@@ -7,45 +7,51 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController {
 
-    var itemArray = [Item]()
+    var itemResults : Results<Item>?
+    let realm = try! Realm()
     
     var selectedCategory : Category? {
         didSet {
-            //loadItems()
-        }
+            loadItems()
+            
+            print(Realm.Configuration.defaultConfiguration.fileURL!)
+              }
     }
     
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        
     }
     
     
     // tableView datasource methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return itemResults?.count ?? 1
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        //let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        //let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
         
-        let item = itemArray[indexPath.row]
+        if let currentItem = itemResults?[indexPath.row] {
+            cell.textLabel?.text = currentItem.itemName
         
-   //     cell.textLabel?.text = itemArray[indexPath.row].title
+            // Ternary operators ==>
+            // value = condition ? valueIfTrue : valueIfFalse
+            cell.accessoryType = currentItem.flag ? .checkmark : .none
+        } else {
+            cell.textLabel?.text = "No items added"
+        }
         
-        // Ternary operators ==>
-        // value = condition ? valueIfTrue : valueIfFalse
-        cell.accessoryType = item.flag ? .checkmark : .none
 //        same functionality
-//        if itemArray[indexPath.row].flag == true {
+//        if itemResults[indexPath.row].flag == true {
 //            cell.accessoryType = .checkmark
 //        } else {
 //            cell.accessoryType = .none
@@ -54,21 +60,27 @@ class ToDoListViewController: UITableViewController {
         return cell
     }
     
+    
     // TableView Delegate Methods for cell selection
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//
-//        if itemArray[indexPath.row].flag == true {
-//            context.delete(itemArray[indexPath.row])
-//            itemArray.remove(at: indexPath.row)
-//        } else {
-//            itemArray[indexPath.row].flag = !itemArray[indexPath.row].flag
-//        }
-//
-//        saveItems()
-//
-//        tableView.deselectRow(at: indexPath, animated: true)
+
+        if let selectedItem = itemResults?[indexPath.row] {
+            do {
+                try realm.write {
+                    //realm.delete(selectedItem)
+                    selectedItem.flag = !selectedItem.flag
+                }
+            } catch {
+                print("Error saving item status \(error)")
+            }
+        }
+        
+        tableView.reloadData()
+        
+        tableView.deselectRow(at: indexPath, animated: true)
     }
    
+    
     // Add new items
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
@@ -77,104 +89,74 @@ class ToDoListViewController: UITableViewController {
         let alert = UIAlertController(title: "Add new ToDoList item", message: "", preferredStyle: .alert)
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            // what happens when user clicks the button on UIAlert
-            
-            //accesing the appdelegate as object
-          
-//            let newItem = Item(context: self.context)
-//            newItem.title = textField.text!
-//            newItem.flag = false
-//            newItem.parentCategory = self.selectedCategory
-//            self.itemArray.append(newItem)
-//
-//
-            // forced unwrapped because the text property of a textfield will never be null
-
-            
-            self.saveItems()
-   
+ 
+            if let currentCategory = self.selectedCategory {
+                do {
+                    try self.realm.write {
+                        let newItem = Item()
+                        newItem.itemName = textField.text!
+                        newItem.dateCreated = Date()
+                       
+                        currentCategory.items.append(newItem)
+                    }
+                } catch {
+                    print("Error saving items, \(error)")
+                }
+            }
+            self.tableView.reloadData()
         }
+        
+        
         
             // adding textfieldbb
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
 
             textField = alertTextField
-            
         }
         
-            alert.addAction(action)
-            
-            present(alert, animated: true, completion: nil)
+        alert.addAction(action)
+        
+        present(alert, animated: true, completion: nil)
+        
+        //tableView.reloadData()
         
     }
     
-    func saveItems() {
+    
+    
+    func loadItems(){
         
-        do{
-            try context.save()
-        } catch {
-            print("Error saving context\(error)")
-        }
-        
+        itemResults = selectedCategory?.items.sorted(byKeyPath: "itemName", ascending: true)
+       
         tableView.reloadData()
-        
-        
     }
-    
-    //          external internal parameter names       default value
-//    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
-//        //let request : NSFetchRequest<Item> = Item.fetchRequest()
-//        
-//        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-//   
-//        if let additionalPredicate = predicate {
-//            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
-//        } else {
-//            request.predicate = categoryPredicate
-//        }
-////        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate])
-////
-////        request.predicate = compoundPredicate
-//        
-//        do {
-//           itemArray = try context.fetch(request)
-//        } catch {
-//            print("Error fetching data from context \(error)")
-//        }
-//        
-//        tableView.reloadData()
-//    }
     
 
 }
 
-////MARK: - Searchbar methods
-//extension ToDoListViewController: UISearchBarDelegate {
-//    
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        let request : NSFetchRequest<Item> = Item.fetchRequest()
-//        
-//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//        
-//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-//        
-//        loadItems(with: request, predicate:  predicate)
-//        
-//    }
-//    
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0 {
-//            loadItems()
-//            
-//            DispatchQueue.main.async {
-//                searchBar.resignFirstResponder()
-//            }
-//            
-//            
-//            
-//        }
-//    }
-//    
-//    
-//}
+//MARK: - Searchbar methods
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        itemResults = itemResults?.filter("itemName CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "itemName", ascending: true)
+        
+        tableView.reloadData()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+            
+            
+            
+        }
+    }
+    
+    
+}

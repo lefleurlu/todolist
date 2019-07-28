@@ -13,7 +13,7 @@ class CategoryViewController: UITableViewController {
     
     let realm = try! Realm()
 
-    var categoryArray = [Category]()
+    var categoryResults : Results<Category>?
     
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
@@ -21,12 +21,14 @@ class CategoryViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        //loadCategories()
+        loadCategories()
     }
 
 // MARK: - TableView Datasource Methods, to display all categories inside persisten container
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryArray.count
+        
+        return categoryResults?.count ?? 1
+        
     }
     
 // MARK: - tableView cellforaRow at IndexPath
@@ -34,9 +36,9 @@ class CategoryViewController: UITableViewController {
         
         //let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        //let category = categoryArray[indexPath.row]
+        //let category = categoryResults[indexPath.row]
         
-        cell.textLabel?.text = categoryArray[indexPath.row].name
+        cell.textLabel?.text = categoryResults?[indexPath.row].name ?? "Add a new category"
         
         return cell
 
@@ -51,7 +53,7 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! ToDoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categoryResults?[indexPath.row]
         }
     }
     
@@ -71,17 +73,14 @@ class CategoryViewController: UITableViewController {
     }
 
     
-//    //          external internal parameter names       cc
-//    func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-//        do {
-//            categoryArray = try context.fetch(request)
-//        } catch {
-//            print("Error fetching data from context \(error)")
-//        }
-//
-//        tableView.reloadData()
-//
-//    }
+
+    func loadCategories() {
+
+        categoryResults = realm.objects(Category.self)
+
+        tableView.reloadData()
+
+    }
     
     
 //MARK: - Add New Categories, setting button pressed
@@ -94,7 +93,6 @@ class CategoryViewController: UITableViewController {
                 // what happens when user clicks the button on UIAlert
                 let newCategory = Category()
                 newCategory.name = textField.text!
-                self.categoryArray.append(newCategory)
 
                 self.save(category : newCategory)
             }
@@ -114,7 +112,6 @@ class CategoryViewController: UITableViewController {
     }
     
  
-    //MARK: - TableView Delegate Methods
     
     
     
