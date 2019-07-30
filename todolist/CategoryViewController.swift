@@ -8,19 +8,18 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
 
     var categoryResults : Results<Category>?
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    
 // MARK: - ViewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         loadCategories()
     }
 
@@ -34,12 +33,12 @@ class CategoryViewController: UITableViewController {
 // MARK: - tableView cellforaRow at IndexPath
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        //let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        //let category = categoryResults[indexPath.row]
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         cell.textLabel?.text = categoryResults?[indexPath.row].name ?? "Add a new category"
         
+        cell.backgroundColor = UIColor(hexString: categoryResults?[indexPath.row].colour ?? "#FFFFFF")
+     
         return cell
 
     }
@@ -81,6 +80,20 @@ class CategoryViewController: UITableViewController {
         tableView.reloadData()
 
     }
+
+//MARK: - Delete data from Swipe
+    override func updateModel(at indexPath: IndexPath) {
+        // Updates data model
+        if let categoryForDeletion = self.categoryResults?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            } catch {
+                print("Error saving item status \(error)")
+            }
+        }
+    }
     
     
 //MARK: - Add New Categories, setting button pressed
@@ -93,9 +106,10 @@ class CategoryViewController: UITableViewController {
                 // what happens when user clicks the button on UIAlert
                 let newCategory = Category()
                 newCategory.name = textField.text!
-
+                newCategory.colour = UIColor.randomFlat.hexValue()
                 self.save(category : newCategory)
             }
+        
         
             // adding textfieldbb
             alert.addTextField { (alertTextField) in
@@ -104,19 +118,21 @@ class CategoryViewController: UITableViewController {
                 textField = alertTextField
 
             }
-
+        
             alert.addAction(action)
 
             present(alert, animated: true, completion: nil)
         
     }
     
- 
+}
+
+
     
     
     
     
 
     
-}
+
 

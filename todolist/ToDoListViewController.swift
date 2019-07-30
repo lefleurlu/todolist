@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: SwipeTableViewController {
 
     var itemResults : Results<Item>?
     let realm = try! Realm()
@@ -18,7 +19,7 @@ class ToDoListViewController: UITableViewController {
         didSet {
             loadItems()
             
-            print(Realm.Configuration.defaultConfiguration.fileURL!)
+            //print(Realm.Configuration.defaultConfiguration.fileURL!)
               }
     }
     
@@ -26,38 +27,40 @@ class ToDoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        
     }
     
     
     // tableView datasource methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        print("numbRowsSect")
         return itemResults?.count ?? 1
+        
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        //let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
-        
+
+        //let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+
         if let currentItem = itemResults?[indexPath.row] {
             cell.textLabel?.text = currentItem.itemName
-        
+            
             // Ternary operators ==>
             // value = condition ? valueIfTrue : valueIfFalse
             cell.accessoryType = currentItem.flag ? .checkmark : .none
         } else {
             cell.textLabel?.text = "No items added"
         }
-        
-//        same functionality
-//        if itemResults[indexPath.row].flag == true {
-//            cell.accessoryType = .checkmark
-//        } else {
-//            cell.accessoryType = .none
-//        }
-        
+ 
+            //        same functionality
+            //        if itemResults[indexPath.row].flag == true {
+            //            cell.accessoryType = .checkmark
+            //        } else {
+            //            cell.accessoryType = .none
+            //        }
+
         return cell
+        
     }
     
     
@@ -67,16 +70,15 @@ class ToDoListViewController: UITableViewController {
         if let selectedItem = itemResults?[indexPath.row] {
             do {
                 try realm.write {
-                    //realm.delete(selectedItem)
                     selectedItem.flag = !selectedItem.flag
                 }
             } catch {
                 print("Error saving item status \(error)")
             }
         }
-        
+
         tableView.reloadData()
-        
+
         tableView.deselectRow(at: indexPath, animated: true)
     }
    
@@ -108,7 +110,7 @@ class ToDoListViewController: UITableViewController {
         
         
         
-            // adding textfieldbb
+        // adding textfieldbb
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
 
@@ -118,8 +120,6 @@ class ToDoListViewController: UITableViewController {
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
-        
-        //tableView.reloadData()
         
     }
     
@@ -132,31 +132,44 @@ class ToDoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
+//MARK: - Delete data from Swipe
+    override func updateModel(at indexPath: IndexPath) {
+        // Updates data model
+        if let categoryForDeletion = self.itemResults?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(categoryForDeletion)
+                }
+            } catch {
+                print("Error saving item status \(error)")
+            }
+        }
+    }
 
 }
 
 //MARK: - Searchbar methods
 extension ToDoListViewController: UISearchBarDelegate {
-    
+
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        
+
         itemResults = itemResults?.filter("itemName CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "itemName", ascending: true)
-        
+
         tableView.reloadData()
     }
-    
+
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchBar.text?.count == 0 {
             loadItems()
-            
+
             DispatchQueue.main.async {
                 searchBar.resignFirstResponder()
             }
-            
-            
-            
+
+
+
         }
     }
-    
-    
+
+
 }
