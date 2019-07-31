@@ -35,14 +35,20 @@ class CategoryViewController: SwipeTableViewController {
         
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        cell.textLabel?.text = categoryResults?[indexPath.row].name ?? "Add a new category"
+        if let category = categoryResults?[indexPath.row] {
+            cell.textLabel?.text = category.name
         
-        cell.backgroundColor = UIColor(hexString: categoryResults?[indexPath.row].colour ?? "#FFFFFF")
-     
+            guard let categoryColour = UIColor(hexString: category.colour) else {fatalError()}
+            
+            cell.backgroundColor = categoryColour
+            cell.textLabel?.textColor = ContrastColorOf(categoryColour, returnFlat: true)
+            
+        }
         return cell
 
     }
 
+    
 //MARK: - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "goToItems", sender: self)

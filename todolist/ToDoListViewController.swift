@@ -15,6 +15,8 @@ class ToDoListViewController: SwipeTableViewController {
     var itemResults : Results<Item>?
     let realm = try! Realm()
     
+    @IBOutlet weak var searchBar: UISearchBar!
+    
     var selectedCategory : Category? {
         didSet {
             loadItems()
@@ -26,13 +28,44 @@ class ToDoListViewController: SwipeTableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+
+      
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        title = selectedCategory!.name
+
+        guard let colourHex = selectedCategory?.colour else { fatalError() }
+        
+        updateNavBar(withHexCode: colourHex)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        updateNavBar(withHexCode: "1D9BF6")
+    }
+    
+//MARK : - Nav bar setup methods
+    func updateNavBar(withHexCode colourHexCode : String) {
+        guard let navBar = navigationController?.navigationBar else { fatalError("Navigation controler does not exist.")}
+        
+        
+        guard let navBarColour = UIColor(hexString: colourHexCode) else { fatalError() }
+        navBar.barTintColor = navBarColour
+        
+        navBar.tintColor = ContrastColorOf(navBarColour, returnFlat: true)
+        
+        navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : ContrastColorOf(navBarColour, returnFlat: true)]
+        
+        //separatorStyle
+        searchBar.layer.borderWidth = 1
+        searchBar.layer.borderColor = navBarColour.cgColor
+        searchBar.barTintColor = navBarColour
         
     }
     
     
-    // tableView datasource methods
+ // tableView datasource methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        print("numbRowsSect")
         return itemResults?.count ?? 1
         
     }
@@ -44,6 +77,14 @@ class ToDoListViewController: SwipeTableViewController {
 
         if let currentItem = itemResults?[indexPath.row] {
             cell.textLabel?.text = currentItem.itemName
+            
+            let categoryColour = UIColor(hexString: selectedCategory?.colour ?? "#FFFFFF")
+            if let itemColour = categoryColour?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(itemResults!.count)) {
+                cell.backgroundColor = itemColour
+                    cell.textLabel?.textColor = ContrastColorOf(itemColour, returnFlat: true)
+            }
+            
+            
             
             // Ternary operators ==>
             // value = condition ? valueIfTrue : valueIfFalse
